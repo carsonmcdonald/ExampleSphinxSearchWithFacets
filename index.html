@@ -1,0 +1,452 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>SO Search</title>
+    <style>
+      body { font-family:arial,helvetica,sans-serif; font-size:14px; } 
+      
+      #header { height:30px; padding:10px; }
+      #content { margin-top:10px; padding-bottom:10px; }
+      #content div { padding:10px;  float:left; }
+      #content-left { width:170px; }
+      #content-main { margin-left:10px; width:650px; }
+      #footer { float:left; margin-top:10px; margin-bottom:10px; padding:10px; width:878px; }
+      #bottom { clear:both; text-align:right; }
+      #loading { display: none; }
+      #advancedsearch { display: none; margin-left: 25px; padding: 0; }
+      #aslink { width: 100%; padding: 0; text-align: right; margin: 0; }
+      #aslink a { text-decoration: none; color: #3060ee; }
+
+      .resultcontainer a { font-size: 120%; }
+      .resultcontainer p { padding: 3px 0px 3px 0px; margin: 0; }
+      .resultcontainer span { color: #006600; font-size: 90%; }
+      .pagerarea { padding-top: 10px; width:650px; text-align: center;  }
+      .pagerarea a { text-decoration: none; color: #3060ee; }
+      a.selected { text-decoration: none; color: #3060ee; font-weight: bold; }
+    </style>
+
+    <script src="http://www.google.com/jsapi?key=ABQIAAAAcktFen-Z7CQCe0dxIKmxeRR_aBi05ACgnvbsQZFBIfYIKZ15thReSry9bl9f_0P_PBtG0ugi0XPetQ" type="text/javascript"></script>
+    <script language="Javascript" type="text/javascript">
+    //<![CDATA[
+
+    function toggleAdvancedSearch()
+    {
+      $('#aslink a').text('Advanced Search ' + ($('#advancedsearch').is(":visible") ? '+' : '-'));
+      $('#advancedsearch').slideToggle(100);
+      return false;
+    }
+
+    function repopulateSearchInformation(searchConfig)
+    {
+      $("#query").val(searchConfig['q']);
+
+      if(searchConfig['w'] != null)
+      {
+        var v = searchConfig['w'].split(',');
+        if(v[0] != 100) $('#titleweight').val(v[0]);
+        if(v[1] != 40) $('#bodyweight').val(v[1]);
+        if(v[2] != 10) $('#commentweight').val(v[2]);
+        if(v[3] != 70) $('#tagweight').val(v[3]);
+      }
+
+      if(searchConfig['cr'] != null)
+      {
+        var v = searchConfig['cr'].split(',');
+        $('#filterstart').val(v[0]);
+        $('#filterend').val(v[1]);
+      }
+
+      if(searchConfig['pt'] == 'A')
+        $('input[name="posttypefilter"]:eq(1)').attr('checked', true);
+      else if(searchConfig['pt'] == 'Q')
+        $('input[name="posttypefilter"]:last').attr('checked', true);
+      else
+        $('input[name="posttypefilter"]:first').attr('checked', true);
+
+      if(searchConfig['ha'] == 'yes')
+        $('input[name="filteraa"]:eq(1)').attr('checked', true);
+      else if(searchConfig['ha'] == 'no')
+        $('input[name="filteraa"]:last').attr('checked', true);
+      else
+        $('input[name="filteraa"]:first').attr('checked', true);
+
+      if(searchConfig['sc'] != null)
+      {
+        var v = searchConfig['sc'].split(',');
+        if(v[0] > 0) $('#filterscorelow').val(v[0]);
+        if(v[1] <= 100000) $('#filterscorehi').val(v[1]);
+      }
+
+      if(searchConfig['vi'] != null)
+      {
+        var v = searchConfig['vi'].split(',');
+        if(v[0] > 0) $('#filterviewslow').val(v[0]);
+        if(v[1] <= 100000) $('#filterviewshi').val(v[1]);
+      }
+
+      if(searchConfig['fa'] != null)
+      {
+        var v = searchConfig['fa'].split(',');
+        if(v[0] > 0) $('#filterfavslow').val(v[0]);
+        if(v[1] <= 100000) $('#filterfavshi').val(v[1]);
+      }
+
+      if(searchConfig['ta'] != null)
+        $('#filtertags').val(searchConfig['ta']);
+
+      populateFilterString(searchConfig);
+
+      if(searchConfig['t'] != null)
+      {
+        var v = searchConfig['t'].split(',');
+        for(var i=0; i<v.length; i++)
+        {
+          switch(v[i])
+          {
+            case 'weekCreated': $('#weekCreated').attr('checked', true); break;
+            case 'monthCreated': $('#monthCreated').attr('checked', true); break;
+            case 'yearCreated': $('#yearCreated').attr('checked', true); break;
+            case 'postType': $('#postType').attr('checked', true); break;
+            case 'accepted': $('#accepted').attr('checked', true); break;
+            case 'tag': $('#tag').attr('checked', true); break;
+          }
+        }
+      }
+    }
+
+    function populateFilterString(searchConfig)
+    {
+      var filters = [];
+
+      if(searchConfig['cr'] != null)
+        filters.push('created(' + searchConfig['cr'] + ')');
+
+      if(searchConfig['pt'] != null)
+        filters.push('postType(' + searchConfig['pt']  + ')');
+
+      if(searchConfig['ha'] != null)
+        filters.push(searchConfig['ha'] == 'yes' ? 'hasAcceptedAnswer' : '!hasAcceptedAnswer');
+
+      if(searchConfig['sc'] != null)
+        filters.push('score(' + searchConfig['sc'] + ')');
+
+      if(searchConfig['vi'] != null)
+        filters.push('views(' + searchConfig['vi'] + ')');
+
+      if(searchConfig['fa'] != null)
+        filters.push('favorites(' + searchConfig['fa'] + ')');
+
+      if(searchConfig['ta'] != null)
+        filters.push('tags(' + searchConfig['ta'] + ')');
+
+      if(filters.length > 0)
+      {
+        var filterVal = '';
+        for(var count=0; count<filters.length; count++)
+          filterVal += filters[count] + (count < filters.length-1 ? ',' : '');
+        searchConfig['f'] = filterVal;
+      }
+      else
+        searchConfig['f'] = null;
+    }
+
+    function getSearchConfiguration()
+    {
+      var searchConfig = [];
+
+      searchConfig['q'] = $("#query").val();
+
+      searchConfig['l'] = 10; // page size
+
+      var defaultWeights = [100,40,10,70];
+      var weights = [100,40,10,70];
+      if($('#titleweight').val() != '') weights[0] = $('#titleweight').val();
+      if($('#bodyweight').val() != '') weights[1] = $('#bodyweight').val();
+      if($('#commentweight').val() != '') weights[2] = $('#commentweight').val();
+      if($('#tagweight').val() != '') weights[3] = $('#tagweight').val();
+
+      if(defaultWeights[0] != weights[0] || defaultWeights[1] != weights[1] || defaultWeights[2] != weights[2] || defaultWeights[3] != weights[3])
+        searchConfig['w'] = '' + weights[0] + ',' + weights[1] + ',' + weights[2] + ',' + weights[3];
+
+      var filters = [];
+      if($('#filterstart').val() != '' && $('#filterend').val() != '')
+        searchConfig['cr'] = '' + $('#filterstart').val() + ',' + $('#filterend').val();
+      else if($('#filterstart').val() != '')
+        searchConfig['cr'] = '' + $('#filterstart').val() + ',' + ((new Date()).getTime() / 1000);
+      else if($('#filterend').val() != '')
+        searchConfig['cr'] = '0,' + $('#filterend').val();
+
+      if($('input[name="posttypefilter"]:checked') != null && $('input[name="posttypefilter"]:checked').val() != null && $('input[name="posttypefilter"]:checked').val() != ' ')
+        searchConfig['pt'] = '' + $('input[name="posttypefilter"]:checked').val();
+
+      if($('input[name="filteraa"]:checked') != null && $('input[name="filteraa"]:checked').val() != null && $('input[name="filteraa"]:checked').val() == 'Y')
+        searchConfig['ha'] = 'yes'; 
+      else if($('input[name="filteraa"]:checked') != null && $('input[name="filteraa"]:checked').val() != null && $('input[name="filteraa"]:checked').val() == 'N')
+        searchConfig['ha'] = 'no'; 
+
+      if($('#filterscorelow').val() != '' && $('#filterscorehi').val() != '')
+        searchConfig['sc'] = '' + $('#filterscorelow').val() + ',' + $('#filterscorehi').val();
+      else if($('#filterscorelow').val() != '')
+        searchConfig['sc'] = '' + $('#filterscorelow').val() + ',1000000';
+      else if($('#filterscorehi').val() != '')
+        searchConfig['sc'] = '0,' + $('#filterscorehi').val();
+
+      if($('#filterviewslow').val() != '' && $('#filterviewshi').val() != '')
+        searchConfig['vi'] = '' + $('#filterviewslow').val() + ',' + $('#filterviewshi').val();
+      else if($('#filterviewslow').val() != '')
+        searchConfig['vi'] = '' + $('#filterviewslow').val() + ',1000000';
+      else if($('#filterviewshi').val() != '')
+        searchConfig['vi'] = '0,' + $('#filterviewshi').val();
+
+      if($('#filterfavslow').val() != '' && $('#filterfavshi').val() != '')
+        searchConfig['fa'] = '' + $('#filterfavslow').val() + ',' + $('#filterfavshi').val();
+      else if($('#filterfavslow').val() != '')
+        searchConfig['fa'] = '' + $('#filterfavslow').val() + ',1000000';
+      else if($('#filterfavshi').val() != '')
+        searchConfig['fa'] = '0,' + $('#filterfavshi').val();
+
+      if($('#filtertags').val() != '')
+        searchConfig['ta'] = $('#filtertags').val();
+
+      populateFilterString(searchConfig);
+
+      var facets = [];
+      if($('#weekCreated:checked').val() != null)
+        facets.push('weekCreated'); 
+
+      if($('#monthCreated:checked').val() != null)
+        facets.push('monthCreated'); 
+
+      if($('#yearCreated:checked').val() != null)
+        facets.push('yearCreated'); 
+
+      if($('#postType:checked').val() != null)
+        facets.push('postType'); 
+
+      if($('#accepted:checked').val() != null)
+        facets.push('accepted'); 
+
+      if($('#tag:checked').val() != null)
+        facets.push('tag'); 
+
+      if(facets.length > 0)
+      {
+        var facetVal = '';
+        for(var count=0; count<facets.length; count++)
+          facetVal += facets[count] + (count < facets.length-1 ? ',' : '');
+        searchConfig['t'] =  facetVal;
+      }
+
+      return searchConfig;
+    }
+
+    function createURLHash(searchConfig, currentPage)
+    {
+      var rv = "#q=" + escape(searchConfig['q']) + "&p=" + currentPage;
+
+      if( searchConfig['l'] != 10) rv += "&s=" + searchConfig['l'];
+      if( searchConfig['w'] != null) rv += "&w=" + searchConfig['w'];
+      if( searchConfig['f'] != null)
+      {
+        if(searchConfig['cr'] != null) rv += "&cr=" + searchConfig['cr'];
+        if(searchConfig['pt'] != null) rv += "&pt=" + searchConfig['pt'];
+        if(searchConfig['ha'] != null) rv += "&ha=" + searchConfig['ha'];
+        if(searchConfig['sc'] != null) rv += "&sc=" + searchConfig['sc'];
+        if(searchConfig['vi'] != null) rv += "&vi=" + searchConfig['vi'];
+        if(searchConfig['fa'] != null) rv += "&fa=" + searchConfig['fa'];
+        if(searchConfig['ta'] != null) rv += "&ta=" + escape(searchConfig['ta']);
+      }
+      if( searchConfig['t'] != null) rv += "&t=" + searchConfig['t'];
+
+      return rv;
+    }
+
+    function updateURLHash(searchConfig, currentPage)
+    {
+      window.location.hash = createURLHash(searchConfig, currentPage);
+    }
+
+    function loadRequest(updateHash, searchConfig, currentPage)
+    {
+      $('#loading').show();
+
+      if(updateHash) updateURLHash(searchConfig, currentPage);
+
+      var requestString = '';
+      for(var requestKey in searchConfig)
+      {
+        requestString += requestKey + '=' + searchConfig[requestKey] + '&';
+      }
+      requestString += 'o=' + (searchConfig['l'] * (currentPage-1));
+
+      $.getJSON('http://www.ioncannon.net/projects/sosearch/search?' + requestString, function(data) 
+      {
+        if('errors' in data)
+        {
+          alert('errors in response');
+          $('#loading').hide();
+          return;
+        }
+
+        if(!('query_results' in data.query_results))
+        {
+          $('#result').html('No results found.'); 
+          $('#loading').hide();
+          return;
+        }
+
+        if('facet_results' in data)
+        {
+          var fval = '<div style="text-align:center; font-weight: bold; width: 100%;">Facets</div>';
+          for(var i=0; i<data.facet_results.length; i++)
+          {
+            fval += '<b>' + data.facet_results[i].facet_name + '</b><br/>';
+            for(var z=0; z<data.facet_results[i][0].query_results.length; z++)
+            {
+              fval += '' + data.facet_results[i][0].query_results[z].attributes.facet_value + ' => ' + data.facet_results[i][0].query_results[z].attributes.count + '<br/>';
+            }
+            fval += '<br/>';
+          }
+          $('#facetvalues').html(fval);
+        }
+        else
+        {
+          $('#facetvalues').html('');
+        }
+
+        var go = '';
+        for(var i=0; i<data.query_results.query_results.length; i++)
+        {
+          var result = data.query_results.query_results[i];
+          go += '<div class="resultcontainer">'; // + result.weight + ' ';
+          if(result.post_type == 1)
+            go += '<a href="http://stackoverflow.com/questions/' + result.post_id + '">' + result.snippet.title + '</a><br/>';
+          else
+            go += '<a href="http://stackoverflow.com/questions/' + result.post_id + '">Answer: ' + result.snippet.title + '</a><br/>';
+          go += '<p>' + result.snippet.body_text + '</p>';
+          go += '<span>http://stackoverflow.com/questions/' + result.post_id + '</span>';
+          go += '</div>';
+        }
+
+        go += '<div class="pagerarea">';
+        var maxPages = (data.query_results.query_result_found / searchConfig['l']);
+        for(var i=1; i<=maxPages && i<=10; i++)
+        {
+          go += '<a';
+          if(currentPage == i) go += ' class="selected"';
+          go += ' href="' + createURLHash(searchConfig, i) + '" onclick="javascript:var searchConfig = getSearchConfiguration(); return loadRequest(true, searchConfig,' + i + ')">' + i + '</a> &nbsp; ';
+        }
+        go += '</div>';
+
+        $('#result').html(go); 
+        $('#loading').hide();
+      });
+
+      return false;
+    }
+
+    google.load("jquery", "1.4.2");
+
+    function OnLoad() 
+    {
+      $(document).ready(function() 
+      {
+        if(window.location.hash) 
+        {
+          var qvals = {};
+          var qval = window.location.hash.substring(window.location.hash.indexOf('#') + 1);
+          jQuery.each(qval.split('&'), function() 
+          {
+            var splitted = this.split('=');
+            var key = splitted[0];
+            var val = splitted[1];
+            if (val.length > 0) qvals[key] = val;
+          }); 
+
+          if(qvals['l'] == null || qvals['l'] < 10)
+            qvals['l'] = 10;
+
+          repopulateSearchInformation(qvals);
+
+          loadRequest(false, qvals, qvals['p']);
+        }
+
+	$("#submit").click(function()
+        {
+          var searchConfig = getSearchConfiguration();
+
+          loadRequest(true, searchConfig, 1);
+          return false;
+	});
+      });
+
+    }
+    google.setOnLoadCallback(OnLoad);
+
+    //]]>
+    </script>
+
+  </head>
+  <body>
+
+    <div id="wrapper">
+      <div id="top">
+        <!--<div style="float: right; padding-right: 50px;">test</div>-->
+      </div>
+      <form id="queryform">
+
+        <div id="header">
+          <div style="width: 220px; height: 30px; float: left;">&nbsp;</div>
+          <div style="padding-top: 20px;">
+            <input type="input" id="query" size="50" value=""/>
+            <input type="button" id="submit" value="Search"/>
+            <img id="loading" src="spinner.gif"/>
+          </div>
+        </div>
+
+        <div id="content">
+          <div id="content-left">
+            <div id="facetvalues"></div>
+          </div>
+          <div id="content-main">
+            <div id="aslink"><a onclick="javascript:return toggleAdvancedSearch();" href="#">Advanced Search +</a></div>
+            <div id="advancedsearch">
+              <b>Weights:</b><br/>
+              Title: <input type="input" id="titleweight" name="titleweight" size="3" value=""/> 
+              Body: <input type="input" id="bodyweight" name="bodyweight" size="3" value=""/> 
+              Comment: <input type="input" id="commentweight" name="commentweight" size="3" value=""/> 
+              Tag: <input type="input" id="tagweight" name="tagweight" size="3" value=""/>  <br/> <br/>
+
+              <b>Filters:</b><br/>
+              Created: <input type="input" id="filterstart" size="25" value=""/> <input type="input" id="filterend" size="25" value=""/> <br/>
+              Post Type: <input type="radio" name="posttypefilter" value=" " checked/> None <input type="radio" name="posttypefilter" value="A"/> Answers only <input type="radio" name="posttypefilter" value="Q"/> Questions only<br/>
+              Accepted Answer: <input type="radio" name="filteraa" value=" " checked/> Ignore <input type="radio" name="filteraa" value="Y"/> Yes <input type="radio" name="filteraa" value="N"/> No <br/>
+              Votes: Low: <input type="input" id="filterscorelow" size="5" value=""/> Hi: <input type="input" id="filterscorehi" size="5" value=""/>
+              Views: Low: <input type="input" id="filterviewslow" size="5" value=""/> Hi: <input type="input" id="filterviewshi" size="5" value=""/> <br/>
+              Favorites: Low: <input type="input" id="filterfavslow" size="5" value=""/> Hi: <input type="input" id="filterfavshi" size="5" value=""/> <br/>
+              Tags: <input type="input" id="filtertags" size="25" value=""/> <br/> <br/>
+
+              <b>Facets:</b> <br/>
+              <input type="checkbox" id="weekCreated" name="weekCreated"/> Week Created
+              <input type="checkbox" id="monthCreated" name="monthCreated"/> Month Created
+              <input type="checkbox" id="yearCreated" name="yearCreated"/> Year Created
+              <input type="checkbox" id="postType" name="postType"/> Post Type
+              <input type="checkbox" id="accepted" name="accepted"/> Accepted
+              <input type="checkbox" id="tag" name="tag"/> Tag
+            </div>
+            <div id="result">
+            </div>
+          </div>
+
+          <div id="content-right"></div>
+        </div>
+
+      </form>
+
+      <div id="footer"></div>
+      <div id="bottom"></div>
+    </div>
+
+    <br style="clear: both;"/>
+  </body>
+</html>
