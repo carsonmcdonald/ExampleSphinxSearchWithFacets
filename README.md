@@ -16,6 +16,7 @@ The Sphinx Search engine, the Sphinx Search PHP API and a database modeled again
 - Modify the config.php file to reflect your Sphinx Search server and database
 - Load the database with data from the Stack Overflow CC data dump
 - Run the Sphinx Search engine indexer again the database
+- Modify the index.html file to include a jQuery key from the Google CDN
 
 ## LICENSE
 

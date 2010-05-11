@@ -25,7 +25,7 @@
       a.selected { text-decoration: none; color: #3060ee; font-weight: bold; }
     </style>
 
-    <script src="http://www.google.com/jsapi?key=ABQIAAAAcktFen-Z7CQCe0dxIKmxeRR_aBi05ACgnvbsQZFBIfYIKZ15thReSry9bl9f_0P_PBtG0ugi0XPetQ" type="text/javascript"></script>
+    <script src="http://www.google.com/jsapi?key=<your key here>" type="text/javascript"></script>
     <script language="Javascript" type="text/javascript">
     //<![CDATA[
 
@@ -279,7 +279,7 @@
       }
       requestString += 'o=' + (searchConfig['l'] * (currentPage-1));
 
-      $.getJSON('http://www.ioncannon.net/projects/sosearch/search?' + requestString, function(data) 
+      $.getJSON('searchapi.php?' + requestString, function(data) 
       {
         if('errors' in data)
         {
